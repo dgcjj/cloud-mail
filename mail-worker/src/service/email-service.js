@@ -148,7 +148,8 @@ const emailService = {
 
 	applyListText(list) {
 		for (const item of list) {
-			item.text = this.toListText(item);
+			item.listText = this.toListText(item);
+			delete item.text;
 			delete item.content;
 		}
 		return list;
@@ -854,7 +855,7 @@ const emailService = {
 			allReceive = accountRow.allReceive;
 		}
 
-		let list = await orm(c).select({ ...emailBriefColumns }).from(email)
+		const list = await orm(c).select({ ...emailListColumns }).from(email)
 			.innerJoin(
 				account,
 				eq(account.accountId, email.accountId)
@@ -871,7 +872,11 @@ const emailService = {
 			.orderBy(desc(email.emailId))
 			.limit(20);
 
-		return this.applyListText(list);
+		await this.emailAddAtt(c, list);
+		for (const item of list) {
+			item.listText = this.toListText(item);
+		}
+		return list;
 	},
 
 	async physicsDelete(c, params) {
@@ -997,7 +1002,7 @@ const emailService = {
 
 		const { emailId } = params;
 
-		let list = await orm(c).select({ ...emailBriefColumns, userEmail: user.email }).from(email)
+		let list = await orm(c).select({ ...emailListColumns, userEmail: user.email }).from(email)
 			.leftJoin(user, eq(email.userId, user.userId))
 			.where(
 				and(
@@ -1007,7 +1012,11 @@ const emailService = {
 			.orderBy(desc(email.emailId))
 			.limit(20);
 
-		return this.applyListText(list);
+		await this.emailAddAtt(c, list);
+		for (const item of list) {
+			item.listText = this.toListText(item);
+		}
+		return list;
 	},
 
 	async emailAddAtt(c, list) {
