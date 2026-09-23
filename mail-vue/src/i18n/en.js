@@ -212,6 +212,7 @@ const en = {
     forward: 'Forward',
     cc: 'Cc',
     bcc: 'Bcc',
+    signature: 'Signature',
     confirm: 'Confirm',
     cancel: 'Cancel',
     delEmailConfirm: 'Confirm deleting this email?',

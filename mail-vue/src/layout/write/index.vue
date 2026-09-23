@@ -45,16 +45,8 @@
             </div>
           </template>
         </el-input-tag>
-        <el-input-tag v-if="ccVisible" @add-tag="val => addExtraTag('cc', val)" tag-type="primary" size="default" v-model="form.cc">
-          <template #prefix>
-            <div class="item-title">{{ $t('cc') }}</div>
-          </template>
-        </el-input-tag>
-        <el-input-tag v-if="bccVisible" @add-tag="val => addExtraTag('bcc', val)" tag-type="primary" size="default" v-model="form.bcc">
-          <template #prefix>
-            <div class="item-title">{{ $t('bcc') }}</div>
-          </template>
-        </el-input-tag>
+        <recipientInput v-if="ccVisible" v-model="form.cc" :label="$t('cc')" />
+        <recipientInput v-if="bccVisible" v-model="form.bcc" :label="$t('bcc')" />
         <el-input v-model="form.subject" :placeholder="t('subject')" />
         <tinyEditor :def-value="defValue" ref="editor" @change="change" @focus="focusChange" />
         <div class="button-item">
@@ -63,6 +55,9 @@
           </div>
           <div class="att-clear" @click="clearContent">
             <Icon icon="icon-park-outline:clear-format" width="24" height="24 "/>
+          </div>
+          <div class="att-clear" @click="showSignature = true" :title="$t('signature')">
+            <Icon icon="mdi:signature-freehand" width="24" height="24"/>
           </div>
           <div class="att-list">
             <div class="att-item" v-for="(item,index) in form.attachments" :key="index">
@@ -102,10 +97,14 @@
         <el-button type="primary" @click="chooseContact">{{t('selectContacts')}}</el-button>
       </div>
     </el-dialog>
+    <signatureDialog v-model="showSignature" :account-id="form.accountId" :email="form.sendEmail" @saved="applySignature" />
   </div>
 </template>
 <script setup>
 import tinyEditor from '@/components/tiny-editor/index.vue'
+import recipientInput from '@/components/recipient-input/index.vue'
+import signatureDialog from '@/components/signature-dialog/index.vue'
+import {useSignatureStore, SIGNATURE_ATTR} from "@/store/signature.js";
 import {h, nextTick, onMounted, onUnmounted, reactive, ref, toRaw, computed} from "vue";
 import {Icon} from "@iconify/vue";
 import {useUserStore} from "@/store/user.js";
@@ -182,6 +181,10 @@ const ccVisible = computed(() => showCc.value || form.cc.length > 0)
 const bccVisible = computed(() => showBcc.value || form.bcc.length > 0)
 //收件人、抄送、密送、主题这几行的数量，用于 grid 布局
 const headRows = computed(() => 2 + (ccVisible.value ? 1 : 0) + (bccVisible.value ? 1 : 0))
+const signatureStore = useSignatureStore()
+const showSignature = ref(false)
+//新邮件打开时编辑器里的初始内容（只有签名），用于判断是否真的写了内容
+let newMailInitContent = ''
 
 const contacts = computed(() => writerStore.sendRecipientRecord.map(item => ({email: item})))
 
@@ -272,17 +275,6 @@ function addTagChange(val) {
   if (selectStatus && has) openSelect()
 }
 
-//抄送/密送输入：和收件人一样支持逗号分隔粘贴，并过滤非法邮箱
-function addExtraTag(key, val) {
-  const list = form[key]
-  list.splice(list.length - 1, 1)
-  val.split(/[,，]/).map(item => item.trim()).filter(item => item).forEach(email => {
-    if (isEmail(email) && !list.includes(email)) {
-      list.push(email)
-    }
-  })
-}
-
 function clearContent() {
   ElMessageBox.confirm(t('clearContentConfirm'), {
     confirmButtonText: t('confirm'),
@@ -345,7 +337,7 @@ async function sendEmail() {
     form.content = editor.value.getContent();
   }
 
-  if (!form.content) {
+  if (!form.content || isOnlySignature()) {
     ElMessage({
       message: t('emptyContentMsg'),
       type: 'error',
@@ -444,7 +436,13 @@ function addRecipientRecord() {
   writerStore.sendRecipientRecord = writerStore.sendRecipientRecord.slice(0, 500);
 }
 
+//新邮件里只有自动插入的签名，没有写其它内容
+function isOnlySignature() {
+  return !form.sendType && !!newMailInitContent && editor.value.getContent() === newMailInitContent
+}
+
 function resetForm() {
+  newMailInitContent = ''
   form.receiveEmail = []
   form.cc = []
   form.bcc = []
@@ -485,7 +483,7 @@ function openForward(email) {
   defValue.value = ''
 
   setTimeout(() => {
-    defValue.value = `
+    defValue.value = `${signaturePrefix('forward')}
       ${formatImage(email.content) || `<pre style="font-family: inherit;word-break: break-word;white-space: pre-wrap;margin: 0">${email.text}</pre>`}
     `
     open()
@@ -561,7 +559,7 @@ function openReply(email, replyAll = false) {
 
   setTimeout(() => {
     defValue.value = `
-    <div></div>
+    <div></div>${signaturePrefix('reply')}
     <div>
     <br>
         ${formatDetailDate(email.createTime)} ${email.name} &lt${email.sendEmail}&gt ${t('wrote')}:
@@ -602,6 +600,77 @@ function open() {
   }
   show.value = true;
   editor.value.focus()
+  insertNewMailSignature()
+}
+
+function currentAccountId() {
+  return accountStore.currentAccount.email ? accountStore.currentAccount.accountId : userStore.user.account.accountId
+}
+
+//回复/转发时插在引用内容上方的签名
+function signaturePrefix(type) {
+  const block = signatureStore.block(currentAccountId(), type)
+  return block ? `<div><br></div>${block}<div><br></div>` : ''
+}
+
+//写新邮件：编辑器为空时插入签名
+function insertNewMailSignature() {
+  if (form.sendType || form.draftId) return
+  signatureStore.load().then(() => {
+    if (form.sendType || form.draftId || !show.value || editor.value.getContent()) return
+    const block = signatureStore.block(form.accountId, 'new')
+    if (!block) return
+    setEditorContent(`<div><br></div>${block}`, () => {
+      newMailInitContent = editor.value.getContent()
+    })
+  }).catch(() => {})
+}
+
+function setEditorContent(html, callback) {
+  defValue.value = ''
+  setTimeout(() => {
+    defValue.value = html
+    nextTick(() => {
+      callback?.()
+      editor.value.focus()
+    })
+  })
+}
+
+//在对话框里保存签名后，替换当前正在写的邮件里的签名
+function applySignature() {
+  const type = form.sendType || 'new'
+  const block = signatureStore.block(form.accountId, type)
+  const before = editor.value.getContent()
+  const doc = new DOMParser().parseFromString(`<body>${before}</body>`, 'text/html')
+  const old = doc.querySelector(`[${SIGNATURE_ATTR}], .cm-signature`)
+  if (old) {
+    if (block) {
+      old.outerHTML = block
+    } else {
+      old.remove()
+    }
+  } else if (block) {
+    if (type === 'new') {
+      doc.body.insertAdjacentHTML('beforeend', `<div><br></div>${block}`)
+    } else {
+      doc.body.insertAdjacentHTML('afterbegin', `<div><br></div>${block}<div><br></div>`)
+    }
+  } else {
+    return
+  }
+  //内容还没被改动过时，同步更新"未改动"的基准，避免关闭时误提示保存草稿
+  const untouchedNew = type === 'new' && (!before || before === newMailInitContent)
+  const untouchedReply = type !== 'new' && before === backReply.content
+  setEditorContent(doc.body.innerHTML, () => {
+    const content = editor.value.getContent()
+    if (untouchedNew) newMailInitContent = content
+    if (untouchedReply) backReply.content = content
+    if (form.content) {
+      form.content = content
+      form.text = doc.body.textContent
+    }
+  })
 }
 
 function openDraft(draft) {
@@ -622,6 +691,7 @@ const handleKeyDown = (event) => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown);
+  signatureStore.load(true).catch(() => {})
 });
 
 onUnmounted(() => {
@@ -643,7 +713,7 @@ function close() {
     return;
   }
 
-  if (!(form.content || form.subject || form.receiveEmail.length > 0 || form.cc.length > 0 || form.bcc.length > 0)) {
+  if (!((form.content && !isOnlySignature()) || form.subject || form.receiveEmail.length > 0 || form.cc.length > 0 || form.bcc.length > 0)) {
     show.value = false
     resetForm()
     return;
@@ -786,7 +856,7 @@ function close() {
 
       .button-item {
         display: grid;
-        grid-template-columns: auto auto 1fr auto;
+        grid-template-columns: auto auto auto 1fr auto;
 
         .att-add {
           cursor: pointer;

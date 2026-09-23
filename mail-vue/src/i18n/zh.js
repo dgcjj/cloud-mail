@@ -212,6 +212,7 @@ const zh = {
     forward: '转发',
     cc: '抄送',
     bcc: '密送',
+    signature: '签名',
     confirm: '确定',
     cancel: '取消',
     delEmailConfirm: '确认删除该邮件吗？',
