@@ -81,8 +81,14 @@ const attService = {
 				imageDataList.push(attData);
 			}
 
+			//签名里的站内图片保留公网链接，转成cid后对方回复时常丢失内嵌附件导致图片空白
+			const inSignature = !!img.closest('[data-cm-signature], .cm-signature');
+			if (inSignature && src && src.startsWith('attachments/') && r2Domain) {
+				img.setAttribute('src', domainUtils.toOssDomain(r2Domain) + '/' + src);
+			}
+
 			//邮件正文站内图片转cid附件
-			if (src && (src.startsWith(domainUtils.toOssDomain(r2Domain)) || src.startsWith('attachments/'))) {
+			if (src && !inSignature && (src.startsWith(domainUtils.toOssDomain(r2Domain)) || src.startsWith('attachments/'))) {
 
 				const cid = uuidv4().replace(/-/g, '')
 				img.setAttribute('src', 'cid:' + cid);
