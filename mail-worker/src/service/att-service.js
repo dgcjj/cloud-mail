@@ -87,6 +87,11 @@ const attService = {
 				img.setAttribute('src', domainUtils.toOssDomain(r2Domain) + '/' + src);
 			}
 
+			//编辑器会把本站链接转成相对路径(如 image/xx.png)，收件方无法解析，补全为本站绝对地址
+			if (src && !src.startsWith('attachments/') && !/^([a-z][a-z0-9+.-]*:|\/\/)/i.test(src) && c.req?.url) {
+				img.setAttribute('src', new URL(src, new URL(c.req.url).origin + '/').href);
+			}
+
 			//邮件正文站内图片转cid附件
 			if (src && !inSignature && (src.startsWith(domainUtils.toOssDomain(r2Domain)) || src.startsWith('attachments/'))) {
 
