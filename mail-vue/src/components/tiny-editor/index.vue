@@ -15,7 +15,9 @@ import {useSettingStore} from '@/store/setting.js'
 defineExpose({
   clearEditor,
   focus,
-  getContent
+  getContent,
+  saveSelection,
+  insertHtml
 })
 
 const props = defineProps({
@@ -167,6 +169,26 @@ function getContent() {
   return editor.value.getContent()
 }
 
+
+//记住当前选区（打开 AI 对话框前调用），返回选中的纯文本
+let bookmark = null
+function saveSelection() {
+  if (!editor.value) return ''
+  bookmark = editor.value.selection.getBookmark(2, true)
+  return editor.value.selection.getContent({format: 'text'}).trim()
+}
+
+//在记住的选区位置插入（有选中文字时替换选中文字）
+function insertHtml(html) {
+  if (!editor.value) return
+  editor.value.focus()
+  if (bookmark) {
+    editor.value.selection.moveToBookmark(bookmark)
+    bookmark = null
+  }
+  editor.value.insertContent(html)
+  emit('change', editor.value.getContent(), editor.value.getContent({format: 'text'}))
+}
 
 function destroyEditor() {
   if (editor.value) {

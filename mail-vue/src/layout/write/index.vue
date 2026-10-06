@@ -59,6 +59,9 @@
           <div class="att-clear" @click="showSignature = true" :title="$t('signature')">
             <Icon icon="mdi:signature-freehand" width="24" height="24"/>
           </div>
+          <div class="att-clear" v-if="aiEnabled" @click="openAi" :title="$t('aiWrite')">
+            <Icon icon="hugeicons:ai-magic" width="24" height="24"/>
+          </div>
           <div class="att-list">
             <div class="att-item" v-for="(item,index) in form.attachments" :key="index">
               <Icon v-bind="getIconByName(item.filename)"/>
@@ -98,12 +101,15 @@
       </div>
     </el-dialog>
     <signatureDialog v-model="showSignature" :account-id="form.accountId" :email="form.sendEmail" @saved="applySignature" />
+    <aiComposeDialog v-model="showAi" :reply-source="replySource" :selected-text="aiSelectedText" :sender-name="form.name" @insert="insertAi" />
   </div>
 </template>
 <script setup>
 import tinyEditor from '@/components/tiny-editor/index.vue'
 import recipientInput from '@/components/recipient-input/index.vue'
 import signatureDialog from '@/components/signature-dialog/index.vue'
+import aiComposeDialog from '@/components/ai-compose-dialog/index.vue'
+import {aiStatus} from "@/request/ai.js";
 import {useSignatureStore, SIGNATURE_ATTR} from "@/store/signature.js";
 import {h, nextTick, onMounted, onUnmounted, reactive, ref, toRaw, computed} from "vue";
 import {Icon} from "@iconify/vue";
@@ -185,6 +191,11 @@ const signatureStore = useSignatureStore()
 const showSignature = ref(false)
 //新邮件打开时编辑器里的初始内容（只有签名），用于判断是否真的写了内容
 let newMailInitContent = ''
+const aiEnabled = ref(false)
+const showAi = ref(false)
+const aiSelectedText = ref('')
+//回复时给 AI 参考的原邮件
+const replySource = ref(null)
 
 const contacts = computed(() => writerStore.sendRecipientRecord.map(item => ({email: item})))
 
@@ -443,6 +454,7 @@ function isOnlySignature() {
 
 function resetForm() {
   newMailInitContent = ''
+  replySource.value = null
   form.receiveEmail = []
   form.cc = []
   form.bcc = []
@@ -554,6 +566,11 @@ function openReply(email, replyAll = false) {
       email.subject.startsWith('回复:')) ? email.subject : 'Re: ' + email.subject
   form.sendType = 'reply'
   form.emailId = email.emailId
+  replySource.value = {
+    from: email.name ? `${email.name} <${email.sendEmail}>` : email.sendEmail,
+    subject: email.subject,
+    text: email.text || htmlToText(email.content)
+  }
 
   defValue.value = ''
 
@@ -580,6 +597,25 @@ function openReply(email, replyAll = false) {
     })
   })
 
+}
+
+function htmlToText(html) {
+  const marked = (html || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|li|tr|h[1-6])>/gi, '\n')
+  const doc = new DOMParser().parseFromString(marked, 'text/html')
+  doc.querySelectorAll('style,script').forEach(item => item.remove())
+  return (doc.body.textContent || '').replace(/\n{3,}/g, '\n\n').trim()
+}
+
+function openAi() {
+  aiSelectedText.value = editor.value.saveSelection()
+  showAi.value = true
+}
+
+function insertAi({html, subject}) {
+  editor.value.insertHtml(html)
+  if (subject && !form.subject) {
+    form.subject = subject
+  }
 }
 
 function formatImage(content) {
@@ -685,6 +721,9 @@ function openDraft(draft) {
 
 const handleKeyDown = (event) => {
   if (event.key === 'Escape') {
+    //Esc 只关闭 AI 对话框，不关闭写信窗口
+    //el-dialog 可能先处理 Esc 把 showAi 置为 false，所以再看一下对话框是否还显示着
+    if (showAi.value || document.querySelector('.ai-compose-dialog')?.offsetParent) return
     close()
   }
 };
@@ -692,6 +731,7 @@ const handleKeyDown = (event) => {
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown);
   signatureStore.load(true).catch(() => {})
+  aiStatus().then(data => aiEnabled.value = !!data?.enabled).catch(() => {})
 });
 
 onUnmounted(() => {
