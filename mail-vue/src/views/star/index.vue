@@ -9,7 +9,11 @@
                @jump="jumpContent"
                actionLeft="6px"
                :show-account-icon="false"
-  />
+  >
+    <template #first>
+      <moveFolder v-if="hasSelected" :get-email-ids="selectedIds" :size="20"/>
+    </template>
+  </emailScroll>
 </template>
 
 <script setup>
@@ -17,7 +21,8 @@ import emailScroll from "@/components/email-scroll/index.vue"
 import {emailDelete} from "@/request/email.js";
 import {starAdd, starCancel, starList} from "@/request/star.js";
 import {useEmailStore} from "@/store/email.js";
-import {defineOptions, onMounted, ref} from "vue";
+import {computed, defineOptions, onMounted, ref} from "vue";
+import moveFolder from "@/components/move-folder/index.vue";
 import router from "@/router/index.js";
 
 defineOptions({
@@ -25,6 +30,12 @@ defineOptions({
 })
 
 const scroll = ref({})
+
+//"移到文件夹"按钮：勾选了邮件才显示
+const hasSelected = computed(() => !!scroll.value?.emailList?.some(item => item.checked))
+function selectedIds() {
+  return scroll.value.emailList.filter(item => item.checked).map(item => item.emailId)
+}
 const emailStore = useEmailStore();
 
 function jumpContent(email) {

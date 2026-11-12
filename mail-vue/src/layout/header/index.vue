@@ -2,7 +2,7 @@
   <div class="header">
     <div class="header-btn">
       <hanburger @click="changeAside"></hanburger>
-      <span class="breadcrumb-item">{{ $t(route.meta.title) }}</span>
+      <span class="breadcrumb-item">{{ headerTitle }}</span>
     </div>
     <div v-perm="'email:send'" class="writer-box">
       <el-button
@@ -115,9 +115,18 @@ import emailSearch from '@/components/email-search/index.vue'
 import allEmailSearch from '@/components/all-email-search/index.vue'
 import {useEmailStore} from '@/store/email.js'
 import {useSendStore} from '@/store/send.js'
+import {useFolderStore} from '@/store/folder.js'
 
 const {t} = useI18n();
 const route = useRoute();
+const folderStore = useFolderStore()
+//自定义文件夹页面显示文件夹名称
+const headerTitle = computed(() => {
+  if (route.name === 'folder') {
+    return folderStore.find(route.params.folderId)?.name || t('folders')
+  }
+  return t(route.meta.title)
+})
 const settingStore = useSettingStore();
 const userStore = useUserStore();
 const uiStore = useUiStore();

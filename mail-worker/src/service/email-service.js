@@ -26,6 +26,7 @@ import telegramService from './telegram-service';
 import webhookService from './webhook-service';
 import forwardMime from '../utils/forward-mime';
 import verifyUtils from '../utils/verify-utils';
+import folderService from './folder-service';
 
 const emailService = {
 
@@ -79,6 +80,8 @@ const emailService = {
 			let accountRow = await accountService.selectById(c, accountId);
 			allReceive = accountRow.allReceive;
 		}
+
+		await folderService.ensureTables(c);
 
 		const filters = this.emailListFilters({
 			userId,
@@ -229,6 +232,7 @@ const emailService = {
 			eq(email.type, type),
 			eq(email.isDel, isDel.NORMAL),
 			eq(account.isDel, isDel.NORMAL),
+			folderService.notInFolderCondition(),
 		];
 		if (!allReceive) {
 			conditions.push(eq(email.accountId, accountId));

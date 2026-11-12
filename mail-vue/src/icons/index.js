@@ -757,3 +757,27 @@ addCollection({
         }
     }
 })
+
+//自定义文件夹用到的图标
+addCollection({
+    "prefix": "mdi",
+    "width": 24,
+    "height": 24,
+    "icons": {
+        "folder-outline": {
+            "body": "<path fill=\"currentColor\" d=\"M20 18H4V8h16m0-2h-8l-2-2H4c-1.11 0-2 .89-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2\"/>"
+        },
+        "folder-move-outline": {
+            "body": "<path fill=\"currentColor\" d=\"M20 18H4V8h16zM12 6l-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16c1.11 0 2-.89 2-2V8a2 2 0 0 0-2-2zm-1 8v-2h4V9l4 4l-4 4v-3z\"/>"
+        },
+        "folder-plus-outline": {
+            "body": "<path fill=\"currentColor\" d=\"M13 19c0 .34.04.67.09 1H4a2 2 0 0 1-2-2V6c0-1.11.89-2 2-2h6l2 2h8a2 2 0 0 1 2 2v5.81c-.61-.35-1.28-.59-2-.72V8H4v10h9.09c-.05.33-.09.66-.09 1m7-1v-3h-2v3h-3v2h3v3h2v-3h3v-2z\"/>"
+        },
+        "dots-horizontal": {
+            "body": "<path fill=\"currentColor\" d=\"M16 12a2 2 0 0 1 2-2a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2m-6 0a2 2 0 0 1 2-2a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2m-6 0a2 2 0 0 1 2-2a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2\"/>"
+        },
+        "inbox-arrow-down-outline": {
+            "body": "<path fill=\"currentColor\" d=\"M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2M5 19v-2h3.13a4.13 4.13 0 0 0 1.27 2m9.6 0h-4.4a4.13 4.13 0 0 0 1.27-2H19m0-2h-5v1a2 2 0 0 1-4 0v-1H5V5h14m-3 5h-2V7h-4v3H8l4 4\"/>"
+        }
+    }
+})

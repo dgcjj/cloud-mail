@@ -10,6 +10,7 @@
       <Icon class="icon" v-if="emailStore.contentData.showReply" v-perm="'email:send'"  @click="openReply" icon="fluent-mdl2:reply" width="19" height="19" />
       <Icon class="icon" v-if="emailStore.contentData.showReply" v-perm="'email:send'"  @click="openReplyAll" icon="mdi:reply-all-outline" width="21" height="21" :title="$t('replyAll')" />
       <Icon class="icon" v-if="emailStore.contentData.showReply" v-perm="'email:send'"  @click="openForward" icon="iconoir:arrow-up-right" width="20" height="20" />
+      <moveFolder v-if="emailStore.contentData.showReply && email.emailId" :get-email-ids="() => [email.emailId]" :current-folder-id="currentFolderId" :size="21" @moved="handleBack"/>
     </div>
     <div></div>
     <el-scrollbar class="scrollbar">
@@ -86,7 +87,8 @@
 <script setup>
 import ShadowHtml from '@/components/shadow-html/index.vue'
 import {computed, reactive, ref, watch, onMounted, onUnmounted, nextTick} from "vue";
-import {useRouter} from 'vue-router'
+import {useRouter, useRoute} from 'vue-router'
+import moveFolder from '@/components/move-folder/index.vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {emailDelete, emailRead} from "@/request/email.js";
 import {Icon} from "@iconify/vue";
@@ -109,6 +111,9 @@ const settingStore = useSettingStore();
 const accountStore = useAccountStore();
 const emailStore = useEmailStore();
 const router = useRouter()
+const route = useRoute()
+//从自定义文件夹打开时所在的文件夹
+const currentFolderId = computed(() => route.params.mailbox === 'folder' ? (emailStore.contentData.folderId || 0) : 0)
 const sendNameRef = ref(null)
 const senderWrapped = ref(false)
 let senderResizeObserver = null

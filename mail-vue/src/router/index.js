@@ -22,7 +22,7 @@ const routes = [
                 }
             },
             {
-                path: '/:mailbox(inbox|starred|sent|all-mail)/messages',
+                path: '/:mailbox(inbox|starred|sent|all-mail|folder)/messages',
                 name: 'content',
                 component: () => import('@/views/content/index.vue'),
                 meta: {
@@ -38,6 +38,16 @@ const routes = [
                 meta: {
                     title: 'settings',
                     name: 'setting',
+                    menu: true
+                }
+            },
+            {
+                path: '/folder/:folderId(\\d+)',
+                name: 'folder',
+                component: () => import('@/views/folder/index.vue'),
+                meta: {
+                    title: 'folders',
+                    name: 'folder',
                     menu: true
                 }
             },

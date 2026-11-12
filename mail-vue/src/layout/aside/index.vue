@@ -30,6 +30,7 @@
           <Icon icon="solar:star-line-duotone" width="20" height="20" />
           <span class="menu-name" style="margin-left: 16px">{{$t('starred')}}</span>
         </el-menu-item>
+        <folderMenu/>
         <el-menu-item @click="router.push({name: 'setting'})" index="setting"
                       :class="route.meta.name === 'setting' ? 'choose-item' : ''">
           <Icon icon="fluent:settings-48-regular" width="20" height="20" />
@@ -80,6 +81,7 @@ import { useRoute } from "vue-router";
 import {Icon} from "@iconify/vue";
 import {useSettingStore} from "@/store/setting.js";
 import {useUiStore} from "@/store/ui.js";
+import folderMenu from "@/components/folder-menu/index.vue";
 
 const settingStore = useSettingStore();
 const uiStore = useUiStore();
