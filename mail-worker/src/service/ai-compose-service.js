@@ -2,7 +2,7 @@ import BizError from '../error/biz-error';
 
 //AI 写信配置保存在 KV，不改数据库表结构，避免和上游的 init.js 迁移冲突
 const CONFIG_KEY = 'ai-compose-config';
-const DEFAULT_WORKERS_MODEL = '@cf/meta/llama-3.1-8b-instruct-fast';
+const DEFAULT_WORKERS_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const MAX_INPUT = 8000;
 
 const PROVIDER = {
