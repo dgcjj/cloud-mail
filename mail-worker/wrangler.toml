@@ -19,6 +19,9 @@ id = "22e82199df0b4d2c962eb14eaa71367b"
 binding = "r2"
 bucket_name = "cloudmail-r2"
 
+[[send_email]]
+name = "forward"		#站内转发到已验证的其他邮箱，不限制单个地址
+
 [ai]
 binding = "ai"
 
