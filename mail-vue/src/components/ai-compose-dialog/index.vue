@@ -48,9 +48,9 @@
       <div class="ai-subject" v-if="parsed.subject">{{ t('subject') }}: {{ parsed.subject }}</div>
       <div class="ai-body ai-ruby" v-if="readingShown" v-html="readingHtml"></div>
       <div class="ai-body" v-else>{{ parsed.body }}<span class="ai-cursor" v-if="loading">▍</span></div>
-      <div class="ai-reading-tip" v-if="showReading && canReading && readingLoading">{{ t('aiReadingLoading') }}</div>
-      <div class="ai-reading-tip" v-if="readingShown">{{ t('aiReadingTip') }}</div>
     </div>
+    <div class="ai-reading-tip" v-if="showReading && canReading && readingLoading">{{ t('aiReadingLoading') }}</div>
+    <div class="ai-reading-tip" v-if="readingShown">{{ t('aiReadingTip') }}</div>
     <div class="ai-foot" v-if="result && !loading">
       <div class="ai-speak">
         <el-button size="small" text @click="read(false)">
@@ -407,10 +407,11 @@ function insert() {
 }
 
 .ai-ruby {
-  line-height: 2.2 !important;
+  font-size: 17px;
+  line-height: 2.7 !important;
 
   :deep(rt) {
-    font-size: 0.6em;
+    font-size: 0.72em;
     color: var(--el-color-primary);
   }
 }
