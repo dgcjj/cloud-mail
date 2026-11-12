@@ -23,4 +23,5 @@ import '../api/oauth-api'
 import '../api/signature-api'
 import '../api/ai-api'
 import '../api/folder-api'
+import '../api/mobile-bg-api'
 export default app;

@@ -132,6 +132,32 @@
                   </div>
                 </div>
               </div>
+              <div class="setting-item personalized">
+                <div><span>{{ $t('mobileLoginBackground') }}</span></div>
+                <div>
+                  <el-image
+                      class="background mobile"
+                      :src="cvtR2Url(setting.mobileBackground)"
+                      :preview-src-list="[cvtR2Url(setting.mobileBackground)]"
+                      show-progress
+                      fit="cover"
+                  >
+                    <template #error>
+                      <div class="error-image">
+                        <Icon icon="ph:image" width="24" height="24"/>
+                      </div>
+                    </template>
+                  </el-image>
+                  <div class="background-btn">
+                    <el-button class="opt-button" size="small" type="primary" @click="openSetBackground('mobile')">
+                      <Icon icon="lsicon:edit-outline" width="16" height="16"/>
+                    </el-button>
+                    <el-button class="opt-button" size="small" type="primary" @click="delBackground('mobile')">
+                      <Icon icon="material-symbols:delete-outline-rounded" width="16" height="16"/>
+                    </el-button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -539,7 +565,7 @@
       >
         <template #header>
           <span style="font-size: 18px">
-            {{ $t('backgroundTitle') }}
+            {{ bgMobile ? $t('mobileLoginBackground') : $t('backgroundTitle') }}
             <el-tooltip>
               <template #content>
                 <span>{{ $t('backgroundWarning') }}</span>
@@ -922,6 +948,7 @@ Authorization: &lt;secret&gt;</pre>
 <script setup>
 import {computed, defineOptions, nextTick, reactive, ref} from "vue";
 import {deleteBackground, setBackground, setBlackList, settingQuery, settingSet} from "@/request/setting.js";
+import {deleteMobileBackground, setMobileBackground} from "@/request/mobile-bg.js";
 import {useSettingStore} from "@/store/setting.js";
 import {useUiStore} from "@/store/ui.js";
 import {useUserStore} from "@/store/user.js";
@@ -980,6 +1007,8 @@ const autoCleanExclude = ref([])
 const backgroundUrl = ref('')
 let backgroundFile = {}
 const showSetBackground = ref(false)
+//正在设置的是电脑背景还是手机端背景
+const bgMobile = ref(false)
 let regVerifyCount = ref(1)
 let addVerifyCount = ref(1)
 let backup = '{}'
@@ -1200,6 +1229,7 @@ const compareByLengthAndUpperCase = (a, b, key) => {
 function closedSetBackground() {
   backgroundImage.value = ''
   localUpShow.value = false
+  bgMobile.value = false
   backgroundUrl.value = setting.value.background?.startsWith('http') ? setting.value.background : ''
 }
 
@@ -1531,15 +1561,20 @@ function aiCodeFilterAddTag(val) {
 }
 
 
-function delBackground() {
+function delBackground(target) {
+  const mobile = target === 'mobile'
   ElMessageBox.confirm(t('delBackgroundConfirm'), {
     confirmButtonText: t('confirm'),
     cancelButtonText: t('cancel'),
     type: 'warning'
   }).then(() => {
-    deleteBackground().then(() => {
-      backgroundUrl.value = ''
-      setting.value.background = null
+    (mobile ? deleteMobileBackground() : deleteBackground()).then(() => {
+      if (mobile) {
+        setting.value.mobileBackground = ''
+      } else {
+        backgroundUrl.value = ''
+        setting.value.background = null
+      }
       ElMessage({
         message: t('delSuccessMsg'),
         type: "success",
@@ -1594,8 +1629,9 @@ async function saveBackground() {
   }
   settingLoading.value = true
 
-  setBackground(image).then(key => {
-    setting.value.background = key
+  const mobile = bgMobile.value;
+  (mobile ? setMobileBackground(image) : setBackground(image)).then(key => {
+    setting.value[mobile ? 'mobileBackground' : 'background'] = key
     showSetBackground.value = false
     ElMessage({
       message: t('saveSuccessMsg'),
@@ -1610,7 +1646,10 @@ async function saveBackground() {
 
 }
 
-function openSetBackground() {
+function openSetBackground(target) {
+  bgMobile.value = target === 'mobile'
+  const current = bgMobile.value ? setting.value.mobileBackground : setting.value.background
+  backgroundUrl.value = current?.startsWith('http') ? current : ''
   showSetBackground.value = true
 }
 
@@ -1792,6 +1831,15 @@ function editSetting(settingForm, refreshStatus = true) {
   @media (max-width: 1023px) {
     gap: 15px;
     padding: 15px;
+  }
+}
+
+.background.mobile {
+  width: 79px !important;
+  height: 140px;
+  @media (max-width: 500px) {
+    width: 51px !important;
+    height: 90px;
   }
 }
 

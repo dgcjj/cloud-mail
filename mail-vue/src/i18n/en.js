@@ -221,6 +221,7 @@ const en = {
     addResendTokenDesc: 'Input to add; leave empty to delete',
     addTurnstileSecret: 'Add Turnstile secret',
     backgroundTitle: 'Change background',
+    mobileLoginBackground: 'Mobile background',
     tgBotDesc: 'Forward received emails to a Telegram bot',
     tgBotToken: 'Bot token',
     toBotTokenDesc: 'Multiple user chat_ids, separated by commas',

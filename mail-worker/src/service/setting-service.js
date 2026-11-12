@@ -10,6 +10,7 @@ import {t} from '../i18n/i18n'
 import verifyRecordService from './verify-record-service';
 import userContext from '../security/user-context';
 import domainUtils from '../utils/domain-uitls';
+import mobileBgService from './mobile-bg-service';
 
 const settingService = {
 
@@ -107,6 +108,7 @@ const settingService = {
 		settingRow.addVerifyOpen = addVerifyOpen
 
 		settingRow.storageType = await r2Service.storageType(c);
+		settingRow.mobileBackground = await mobileBgService.get(c);
 
 		return settingRow;
 	},
@@ -206,6 +208,7 @@ const settingService = {
 			r2Domain: settingRow.r2Domain,
 			siteKey: settingRow.siteKey,
 			background: settingRow.background,
+			mobileBackground: settingRow.mobileBackground,
 			loginOpacity: settingRow.loginOpacity,
 			domainList: settingRow.loginDomain === 1 && !token ? [] : settingRow.domainList,
 			regKey: settingRow.regKey,

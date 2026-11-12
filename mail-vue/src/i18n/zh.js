@@ -221,6 +221,7 @@ const zh = {
     addResendTokenDesc: '输入内容添加，不填则删除',
     addTurnstileSecret: '添加 Turnstile 密钥',
     backgroundTitle: '设置背景',
+    mobileLoginBackground: '手机端登录背景',
     tgBotDesc: '可以将接收的邮件转发到Tg机器人',
     tgBotToken: '机器人 token',
     toBotTokenDesc: '用户 chat_id 多个用,分开',

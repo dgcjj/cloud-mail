@@ -10,7 +10,7 @@
       <div class="x4 cloud"></div>
       <div class="x5 cloud"></div>
     </div>
-    <div v-else :style="background"></div>
+    <div v-else :style="background" :class="{'mobile-bg': settingStore.settings.mobileBackground}"></div>
     <div class="form-wrapper">
       <div class="container">
         <span class="form-title">{{ settingStore.settings.title }}</span>
@@ -299,7 +299,8 @@ const background = computed(() => {
     'background-image': `url(${cvtR2Url(settingStore.settings.background)})`,
     'background-repeat': 'no-repeat',
     'background-size': 'cover',
-    'background-position': 'center'
+    'background-position': 'center',
+    '--mobile-bg': settingStore.settings.mobileBackground ? `url(${cvtR2Url(settingStore.settings.mobileBackground)})` : 'none'
   } : ''
 })
 
@@ -665,6 +666,13 @@ function submitRegister() {
 </style>
 
 <style lang="scss" scoped>
+
+//手机端有专用背景时替换掉横版背景
+.mobile-bg {
+  @media (max-width: 767px) {
+    background-image: var(--mobile-bg) !important;
+  }
+}
 
 .form-wrapper {
   position: fixed;
