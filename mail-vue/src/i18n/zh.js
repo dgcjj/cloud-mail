@@ -430,6 +430,8 @@ const zh = {
     aiGenerate: '生成',
     aiRegenerate: '重新生成',
     aiStop: '停止',
+    aiSpeak: '朗读',
+    aiSpeakSlow: '慢速朗读',
     aiInsert: '插入邮件',
     aiReplaceSelection: '替换选中文字',
     aiEmptyResult: 'AI 没有返回内容，请重试或换个说法',

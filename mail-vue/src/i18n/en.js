@@ -430,6 +430,8 @@ const en = {
     aiGenerate: 'Generate',
     aiRegenerate: 'Regenerate',
     aiStop: 'Stop',
+    aiSpeak: 'Listen',
+    aiSpeakSlow: 'Slow',
     aiInsert: 'Insert',
     aiReplaceSelection: 'Replace selection',
     aiEmptyResult: 'AI returned nothing, please try again',

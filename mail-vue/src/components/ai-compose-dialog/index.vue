@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" @closed="stop"
+  <el-dialog :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" @closed="onClosed"
              top="8vh" width="min(680px, calc(100% - 20px))" class="ai-compose-dialog">
     <template #header>
       <div class="ai-head">
@@ -48,7 +48,19 @@
       <div class="ai-subject" v-if="parsed.subject">{{ t('subject') }}: {{ parsed.subject }}</div>
       <div class="ai-body">{{ parsed.body }}<span class="ai-cursor" v-if="loading">▍</span></div>
     </div>
-    <div class="ai-model" v-if="model">{{ model }}</div>
+    <div class="ai-foot" v-if="result && !loading">
+      <div class="ai-speak">
+        <el-button size="small" text @click="read(false)">
+          <Icon :icon="speaking === 'normal' ? 'mdi:stop-circle-outline' : 'mdi:volume-high'" width="18" height="18"/>
+          <span>{{ speaking === 'normal' ? t('aiStop') : t('aiSpeak') }}</span>
+        </el-button>
+        <el-button size="small" text @click="read(true)">
+          <Icon :icon="speaking === 'slow' ? 'mdi:stop-circle-outline' : 'mdi:tortoise'" width="18" height="18"/>
+          <span>{{ speaking === 'slow' ? t('aiStop') : t('aiSpeakSlow') }}</span>
+        </el-button>
+      </div>
+      <div class="ai-model" v-if="model">{{ model }}</div>
+    </div>
 
     <template #footer>
       <el-button @click="emit('update:modelValue', false)">{{ t('cancel') }}</el-button>
@@ -64,6 +76,7 @@ import {computed, ref, watch} from "vue";
 import {Icon} from "@iconify/vue";
 import {useI18n} from "vue-i18n";
 import {aiCompose} from "@/request/ai.js";
+import {speak, stopSpeak} from "@/utils/speak.js";
 
 const props = defineProps({
   modelValue: Boolean,
@@ -95,6 +108,8 @@ const lang = ref('')
 const result = ref('')
 const model = ref('')
 const loading = ref(false)
+//正在朗读：'' | 'normal' | 'slow'
+const speaking = ref('')
 let controller = null
 
 const hasSelection = computed(() => !!props.selectedText)
@@ -135,6 +150,10 @@ watch(() => props.modelValue, (val) => {
 watch(mode, () => {
   result.value = ''
   model.value = ''
+})
+
+watch(result, () => {
+  if (speaking.value) stopRead()
 })
 
 async function generate() {
@@ -179,6 +198,30 @@ async function generate() {
 
 function stop() {
   controller?.abort()
+}
+
+function onClosed() {
+  stop()
+  stopRead()
+}
+
+function stopRead() {
+  stopSpeak()
+  speaking.value = ''
+}
+
+//朗读结果：写信/回复时只读正文；没选语言时按文字自动判断
+async function read(slow) {
+  const kind = slow ? 'slow' : 'normal'
+  if (speaking.value === kind) return stopRead()
+  const text = parsed.value.body.trim()
+  if (!text) return
+  speaking.value = kind
+  try {
+    await speak(text, mode.value === 'polish' ? '' : lang.value, slow)
+  } finally {
+    if (speaking.value === kind) speaking.value = ''
+  }
 }
 
 function escapeHtml(text) {
@@ -270,8 +313,28 @@ function insert() {
   }
 }
 
-.ai-model {
+.ai-foot {
+  display: flex;
+  align-items: center;
   margin-top: 6px;
+
+  .ai-speak {
+    display: flex;
+    gap: 4px;
+
+    .el-button {
+      margin-left: 0;
+      gap: 4px;
+    }
+
+    span {
+      margin-left: 4px;
+    }
+  }
+}
+
+.ai-model {
+  margin-left: auto;
   font-size: 12px;
   color: var(--el-text-color-placeholder);
   text-align: right;
