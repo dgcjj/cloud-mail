@@ -28,7 +28,7 @@ import {starAdd, starCancel} from "@/request/star.js";
 import {folderEmails} from "@/request/folder.js";
 import {useEmailStore} from "@/store/email.js";
 import {useFolderStore} from "@/store/folder.js";
-import {computed, defineOptions, onActivated, onMounted, ref} from "vue";
+import {computed, defineOptions, onActivated, onMounted, ref, watch} from "vue";
 import {useRoute} from "vue-router";
 import router from "@/router/index.js";
 
@@ -40,7 +40,12 @@ const route = useRoute()
 const emailStore = useEmailStore()
 const folderStore = useFolderStore()
 const scroll = ref({})
-const folderId = computed(() => Number(route.params.folderId) || 0)
+//页面被 keep-alive 缓存，离开后路由里没有 folderId，只在当前就是文件夹页时才更新，
+//否则列表会因 key 变成 0 而重建并请求不存在的文件夹
+const folderId = ref(Number(route.params.folderId) || 0)
+watch(() => [route.name, route.params.folderId], ([name, id]) => {
+  if (name === 'folder' && Number(id)) folderId.value = Number(id)
+})
 let loadedVersion = folderStore.version
 
 const hasSelected = computed(() => !!scroll.value?.emailList?.some(item => item.checked))
@@ -83,6 +88,7 @@ function cancelStar(email) {
 function getEmailList(emailId, size) {
   const id = folderId.value
   loadedVersion = folderStore.version
+  if (!id) return Promise.resolve({list: [], total: 0, latestEmail: {emailId: 0}})
   return emailStore.fetchList(full => folderEmails(id, emailId, size, full)).then(data => {
     data.latestEmail = {emailId: 0}
     return data
