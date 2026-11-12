@@ -46,7 +46,10 @@
 
     <div class="ai-result" v-if="result || loading">
       <div class="ai-subject" v-if="parsed.subject">{{ t('subject') }}: {{ parsed.subject }}</div>
-      <div class="ai-body">{{ parsed.body }}<span class="ai-cursor" v-if="loading">▍</span></div>
+      <div class="ai-body ai-ruby" v-if="readingShown" v-html="readingHtml"></div>
+      <div class="ai-body" v-else>{{ parsed.body }}<span class="ai-cursor" v-if="loading">▍</span></div>
+      <div class="ai-reading-tip" v-if="showReading && canReading && readingLoading">{{ t('aiReadingLoading') }}</div>
+      <div class="ai-reading-tip" v-if="readingShown">{{ t('aiReadingTip') }}</div>
     </div>
     <div class="ai-foot" v-if="result && !loading">
       <div class="ai-speak">
@@ -59,6 +62,8 @@
           <span>{{ speaking === 'slow' ? t('aiStop') : t('aiSpeakSlow') }}</span>
         </el-button>
       </div>
+      <el-switch v-if="canReading" v-model="showReading" size="small" class="ai-reading-switch"
+                 :active-text="t('aiShowReading')" :loading="readingLoading"/>
       <div class="ai-model" v-if="model">{{ model }}</div>
     </div>
 
@@ -77,6 +82,7 @@ import {Icon} from "@iconify/vue";
 import {useI18n} from "vue-i18n";
 import {aiCompose} from "@/request/ai.js";
 import {speak, stopSpeak} from "@/utils/speak.js";
+import {furiganaHtml, hasJapanese} from "@/utils/furigana.js";
 
 const props = defineProps({
   modelValue: Boolean,
@@ -110,6 +116,13 @@ const model = ref('')
 const loading = ref(false)
 //正在朗读：'' | 'normal' | 'slow'
 const speaking = ref('')
+//假名读音：只在对话框里显示，插入邮件的仍是原文
+const READING_KEY = 'ai-show-reading'
+const showReading = ref(readStore() === '1')
+const readingText = ref('')
+const readingFor = ref('')
+const readingLoading = ref(false)
+let readingController = null
 let controller = null
 
 const hasSelection = computed(() => !!props.selectedText)
@@ -155,6 +168,55 @@ watch(mode, () => {
 watch(result, () => {
   if (speaking.value) stopRead()
 })
+
+function readStore() {
+  try {
+    return localStorage.getItem(READING_KEY)
+  } catch (e) {
+    return null
+  }
+}
+
+//结果是日文（选了日语，或文字里有假名）才显示开关
+const canReading = computed(() => !!result.value && !loading.value && mode.value !== 'polish'
+    && (lang.value === 'ja' || hasJapanese(parsed.value.body)))
+
+const readingShown = computed(() => showReading.value && canReading.value
+    && readingFor.value === parsed.value.body.trim() && !!readingText.value)
+
+const readingHtml = computed(() => furiganaHtml(readingText.value))
+
+watch([showReading, canReading], ([show, can]) => {
+  try {
+    localStorage.setItem(READING_KEY, show ? '1' : '0')
+  } catch (e) {
+  }
+  if (show && can) loadReading()
+})
+
+async function loadReading() {
+  const text = parsed.value.body.trim()
+  if (!text || readingLoading.value || readingFor.value === text) return
+  readingController = new AbortController()
+  readingLoading.value = true
+  try {
+    const res = await aiCompose({mode: 'furigana', text}, () => {}, readingController.signal)
+    if (parsed.value.body.trim() === text && res.text.trim()) {
+      readingText.value = res.text.trim()
+      readingFor.value = text
+    }
+  } catch (e) {
+    if (e?.name !== 'AbortError') {
+      ElMessage({message: e?.message || t('aiFailed'), type: 'error', plain: true})
+      showReading.value = false
+    }
+  } finally {
+    readingLoading.value = false
+    readingController = null
+    //请求期间结果被重新生成了，补一次
+    if (showReading.value && canReading.value && readingFor.value !== parsed.value.body.trim()) loadReading()
+  }
+}
 
 async function generate() {
   if (loading.value) return
@@ -203,6 +265,7 @@ function stop() {
 function onClosed() {
   stop()
   stopRead()
+  readingController?.abort()
 }
 
 function stopRead() {
@@ -330,6 +393,25 @@ function insert() {
     span {
       margin-left: 4px;
     }
+  }
+}
+
+.ai-reading-switch {
+  margin-left: 10px;
+}
+
+.ai-reading-tip {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--el-text-color-placeholder);
+}
+
+.ai-ruby {
+  line-height: 2.2 !important;
+
+  :deep(rt) {
+    font-size: 0.6em;
+    color: var(--el-color-primary);
   }
 }
 

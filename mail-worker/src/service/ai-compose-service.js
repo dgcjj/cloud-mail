@@ -10,7 +10,7 @@ const PROVIDER = {
 	CUSTOM: 'custom'
 };
 
-const MODES = ['draft', 'reply', 'polish', 'translate'];
+const MODES = ['draft', 'reply', 'polish', 'translate', 'furigana'];
 
 const TONES = {
 	formal: 'formal and professional',
@@ -89,7 +89,7 @@ const aiComposeService = {
 		}
 
 		const messages = this.buildMessages(params);
-		const temperature = ['polish', 'translate'].includes(params.mode) ? 0.3 : 0.7;
+		const temperature = params.mode === 'furigana' ? 0.1 : ['polish', 'translate'].includes(params.mode) ? 0.3 : 0.7;
 
 		if (config.provider === PROVIDER.CUSTOM) {
 			try {
@@ -204,6 +204,19 @@ const aiComposeService = {
 			rules.push('Keep the meaning, length and paragraph layout. Keep names, email addresses, numbers and links unchanged. Return only the translation, without the tags.');
 			if (instruction) rules.push(`Extra requirements: ${instruction}`);
 			user = `Translate into ${target}:\n<text>\n${text}\n</text>`;
+		}
+
+		//给日文加假名读音，只在对话框里显示，格式 漢字{かな}
+		if (mode === 'furigana') {
+			if (!text) throw new BizError('Text is empty');
+			system = 'You add furigana (hiragana readings) to Japanese text for a learner.';
+			rules.push('Copy the text inside <text></text> exactly, character for character. Do not translate, correct, rephrase or add anything.');
+			rules.push('Every kanji must get a reading, with no exceptions (私, 時間, 午後 and other common words too). Put the hiragana reading in curly braces directly after the kanji, before any okurigana: 食{た}べる, お願{ねが}い, 送{おく}って.');
+			rules.push('Example. Input: 私は明日、お店で寿司を食べたいです。 Output: 私{わたし}は明日{あした}、お店{みせ}で寿司{すし}を食{た}べたいです。');
+			rules.push('Leave kana, Latin letters, numbers and punctuation unchanged and without braces. Return only the annotated text, without the tags.');
+			user = `<text>
+${text}
+</text>`;
 		}
 
 		return [
